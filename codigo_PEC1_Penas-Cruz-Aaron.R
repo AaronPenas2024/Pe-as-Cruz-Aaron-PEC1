@@ -13,7 +13,7 @@ se <- SummarizedExperiment(
        colData = meta_data
 )
 
-saveRDS(se, file = "contenedor_summarized")
+save(se, file = "contenedor_summarized.Rda")
 
 # Matrix
 assay_se <-  assay(se, "counts")
