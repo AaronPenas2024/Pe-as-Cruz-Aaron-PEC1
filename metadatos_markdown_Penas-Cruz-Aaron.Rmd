@@ -1,0 +1,141 @@
+---
+title: "pec1_ado"
+author: "Aaron Peñas Cruz"
+date: "2024-11-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(SummarizedExperiment)
+library(ggplot2)
+library(pheatmap)
+```
+
+## Naturaleza de los datos
+
+Estos datos provienen de un estudio titulado "Metabotypes of response to bariatric surgery independent of the magnitude of weight loss".
+
+Los datos corresponden a los valores de concentración de metabolitos, extraidos del suero sanguíneo de 39 personas con obesidad mórbida. Se analizan una gran variedad de metabolitos: acilcarnitinas, fosfatidilcolinas, esfingomielinas, aminoácidos, aminas biogénicas y hexosas.
+
+Las muestras se obtuvieron mediante espectrometría de masas, utilizando las técnicas LC-MS/MS y FIA-ESI-MS/MS. Posteriormente, los valores fueron procesados con la herramienta MetIDQ.
+
+## Descripción
+
+Las variables del dataset son las que se muestran a continuación:
+
+```{r}
+data_values <- read.csv("2018-MetabotypingPaper/DataValues_S013.csv", row.names = 1)
+head(data_values)
+str(data_values)
+```
+
+Las 5 primeras variables corresponden a información concreta de los sujetos incluidos en el estudio. Las muestras tienen asignadas un identificativo único, el género y la edad de la persona, además del lote en el que se procesaros las muestras biológicas. A continuación, podemos observar las primeras 10 muestras además de la estructura única. Para facilitar el proceso, declaramos una nueva variable que contiene solamente aquellas variables que no son relativas a la concentración de metabolitos.
+
+```{r}
+meta_data <- data_values[, 2:5]
+meta_data <- as.data.frame(meta_data)
+
+str(meta_data)
+head(meta_data)
+```
+
+#### Análisis variable AGE
+
+En primer lugar, hacemos un resumen estadístico.
+
+```{r}
+summary(meta_data$AGE)
+```
+
+Podemos observar como la edad minima es 19 y la máxima es 59 años. El primer cuartil nos indica que el 25% de los individuos tienen 35 o menos años, reportando una mediana de 41 años y una media de 40.79. Mientras que el tercer cuartil nos indica que el 75% de individuos tienen 46 años o menos. 
+
+Parece que puede seguir una distribución aproximadamente normal. Para confirmarlo, empleamos un gráfico de histogramas y un gráfico QQ.
+
+```{r}
+hist(meta_data$AGE, main = "Histograma de AGE", xlab = "Edad", col = "lightgreen", border = "black")
+
+qqnorm(meta_data$AGE, main = "QQ Plot de AGE")
+qqline(meta_data$AGE, col = "red")
+```
+
+Los resultados muestran coherencia con el análisis del resumen estadístico, ya que la mayoría de las muestras siguen una distribución normal, exceptuando un desvío en los valores extremos situados en la cola. Esto podría significar que hay presencia de outliers.
+
+Para terminar, realizamos un test de normalidad. Debido a que la n es baja, utilizamos Shapiro test.
+```{r}
+shapiro_test <- shapiro.test(meta_data$AGE)
+print(shapiro_test)
+
+```
+
+Los resultados del test nos confirman que la variable sigue una distribución normal. El p valor superior a 0.05 implica que no podemos rechazar la hipótesis nula de normalidad. 
+
+#### Análisis variable AGE
+
+```{r}
+str(meta_data$GENDER)
+unique(meta_data$GENDER)
+```
+
+Es una variable categórica, más específicamente dicotómica ya que sus valores son M (hombre) y F (mujer).
+
+A continuación, mostramos la cantidad de hombres y mujeres que se han incluido en el estudio.
+
+```{r}
+barplot(table(meta_data$GENDER), main = "Distribución GENDER", col = "lightpink",
+        xlab = "Género", ylab = "Pacientes")
+```
+
+Y añadimos un gráfico de densidad acumulada incluyendo la edad, ya que pueden presentarse asociaciones importantes entre estas dos variables.
+
+```{r}
+ggplot(data = meta_data, aes(x = GENDER, y = AGE)) +
+  geom_violin(fill = "lightblue") +
+  labs(title = "Distribución de AGE por GENDER", x = "Género", y = "Edad")
+```
+
+Hay una mayor variabilidad en la edad para las mujeres que en el caso de los hombres. Podemos observar una serie de cortes horizontales abruptos en los extremos en ambas figuras, lo que puede significar que los datos han sido filtrados con anterioridad o bien que los pacientes han sido incluidos con algún criterio en específico.
+
+
+#### Análisis variable AGE
+
+Observamos la cantidad de muestras asociadas al grupo 1 y 2.
+
+```{r}
+str(meta_data$Group)
+unique(meta_data$Group)
+```
+
+Verificamos que los valores únicos de la variable son 1 y 2. A continuación, representamos la cantidad de muestras que corresponden a cada grupo.
+
+```{r}
+barplot(table(meta_data$Group), main = "Distribución GROUP", col = "lightcoral",
+        xlab = "Grupo", ylab = "Pacientes")
+```
+
+#### Análisis variable SURGERY
+
+```{r}
+str(meta_data$SURGERY)
+unique(meta_data$SURGERY)
+```
+Para esta variable categórica, tenemos dos valores únicos que hacen referencia al tipo de intervención a la que se somete el paciente.
+
+```{r}
+barplot(table(meta_data$SURGERY), main = "Distribución SURGERY", col = "gray",
+        xlab = "Tipo", ylab = "Pacientes")
+```
+
+Hay una mayor cantidad de pacientes con una intervención de tipo by pass que de una operación tubular.
+
+```{r}
+ggplot(data = meta_data, aes(x = SURGERY, y = AGE)) +
+  geom_violin(fill = "grey") +
+  labs(title = "Distribución de AGE por SURGERY", x = "Tipo", y = "Edad")
+```
+
+En el anterior gráfico, podemos observar como hay un aumento en ambas intervenciones a los 40 años aproximadamente. En la operación tubular vemos un incidencia nula en pacientes de menos de 35 años. 
